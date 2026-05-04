@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Rotas de Coleta GrK</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:        rgba(8, 8, 10, 0.77);
+  --bg-row:    rgba(13, 13, 15, 0.75);
+  --bg-hover:  rgba(20, 20, 24, 0.78);
+  --border:    rgba(255,255,255,0.11);
+  --border-md: rgba(255,255,255,0.18);
+
+  --text:    #ffffff;
+  --text-80: rgba(255,255,255,0.82);
+  --text-60: rgba(255,255,255,0.62);
+  --text-40: rgba(255,255,255,0.42);
+
+  --accent:     #5b8af5;
+  --accent-dim: rgba(91,138,245,0.12);
+  --accent-bdr: rgba(91,138,245,0.28);
+
+  --gold:     #d4a843;
+  --gold-dim: rgba(212,168,67,0.12);
+  --gold-bdr: rgba(212,168,67,0.28);
+
+  --green:     #5fba7d;
+  --green-dim: rgba(95,186,125,0.12);
+  --green-bdr: rgba(95,186,125,0.28);
+
+  --red:     #c94f4f;
+  --red-dim: rgba(201,79,79,0.11);
+  --red-bdr: rgba(201,79,79,0.26);
+
+  --r: 10px; --rs: 7px; --rx: 5px;
+}
+
+html, body {
+  width: 100%; height: 100%;
+  background: transparent;
+  font-family: 'DM Sans', sans-serif;
+  color: var(--text);
+  overflow: hidden;
+  user-select: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+@keyframes fadeUp   { from{opacity:0;transform:translateY(8px)}  to{opacity:1;transform:translateY(0)} }
+@keyframes fadeLeft { from{opacity:0;transform:translateX(-8px)} to{opacity:1;transform:translateX(0)} }
+@keyframes fadeIn   { from{opacity:0} to{opacity:1} }
+@keyframes pulse    { 0%,100%{opacity:1} 50%{opacity:.45} }
+
+/* ═══════════════════════════════════════════
+   WRAPPER ESQUERDO — painel principal
+═══════════════════════════════════════════ */
+#left-wrapper {
+  position: fixed;
+  left: 32px; top: 50%;
+  transform: translateY(-50%);
+  width: 340px;
+  pointer-events: none; opacity: 0;
+  transition: opacity .22s ease;
+  z-index: 10;
+}
+#left-wrapper.on { opacity: 1; pointer-events: all; }
+
+#left-panel {
+  background: var(--bg);
+  border: 1px solid var(--border-md);
+  border-radius: var(--r);
+  overflow: hidden;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.70);
+  transform: translateX(-12px) scale(.975); opacity: 0;
+  transition: transform .28s cubic-bezier(.16,1,.3,1), opacity .22s ease;
+  display: flex; flex-direction: column;
+  max-height: 84vh;
+}
+#left-wrapper.on #left-panel { transform: translateX(0) scale(1); opacity: 1; }
+
+.l-topbar {
+  height: 2px; flex-shrink: 0;
+  background: linear-gradient(90deg, var(--accent) 0%, rgba(91,138,245,0.18) 60%, transparent 100%);
+}
+
+/* header */
+.l-header {
+  display: flex; align-items: center; gap: 10px;
+  padding: 14px 16px 12px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.l-icon {
+  font-size: 16px; width: 34px; height: 34px;
+  background: rgba(255,255,255,0.05); border: 1px solid var(--border);
+  border-radius: var(--rs);
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.l-title { font-size: 14px; font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
+.l-sub   { font-size: 9.5px; font-weight: 600; color: var(--text-40); margin-top: 1px; letter-spacing: .07em; text-transform: uppercase; }
+.l-close {
+  margin-left: auto; width: 24px; height: 24px; border-radius: var(--rx);
+  background: var(--red-dim); border: 1px solid var(--red-bdr);
+  color: rgba(201,79,79,0.65); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; transition: all .13s; flex-shrink: 0;
+}
+.l-close:hover { background: rgba(201,79,79,0.20); color: var(--red); }
+
+/* contador de seleção */
+.l-counter {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 16px 7px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.l-counter-label { font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: .12em; text-transform: uppercase; color: var(--text-40); }
+.l-counter-val   { font-family: 'DM Mono', monospace; font-size: 11px; font-weight: 500; color: var(--accent); }
+.l-counter-val.full { color: var(--gold); }
+
+/* banner rota ativa */
+.l-active-banner {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 16px;
+  background: rgba(95,186,125,0.06);
+  border-bottom: 1px solid var(--green-bdr);
+  flex-shrink: 0;
+}
+.l-active-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); animation: pulse 1.8s ease-in-out infinite; flex-shrink: 0; }
+.l-active-text { font-size: 11px; font-weight: 600; color: var(--green); }
+.l-active-sub  { font-size: 9px; color: rgba(95,186,125,.5); margin-top: 1px; letter-spacing: .04em; }
+
+/* body */
+.l-body {
+  flex: 1; overflow-y: auto;
+  padding: 12px 14px 12px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.08) transparent;
+}
+.l-body::-webkit-scrollbar { width: 3px; }
+.l-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 3px; }
+
+/* section label */
+.l-section-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px; letter-spacing: .16em; text-transform: uppercase;
+  color: var(--text-40); margin-bottom: 8px; margin-top: 14px;
+}
+.l-section-label:first-child { margin-top: 0; }
+
+/* grid de itens — 3 colunas */
+.l-item-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 5px;
+}
+
+.l-item-card {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 5px;
+  padding: 10px 6px 9px;
+  background: var(--bg-row);
+  border: 1px solid var(--border);
+  border-bottom: 2px solid transparent;
+  border-radius: var(--rs);
+  cursor: pointer;
+  transition: background .13s, border-color .13s;
+  position: relative;
+  text-align: center;
+  min-height: 82px;
+}
+.l-item-card:hover {
+  background: var(--bg-hover); border-color: var(--border-md);
+  border-bottom-color: var(--accent);
+}
+.l-item-card.selected {
+  background: var(--accent-dim); border-color: var(--accent-bdr);
+  border-bottom-color: var(--accent);
+}
+.l-item-card.disabled { opacity: .28; cursor: not-allowed; pointer-events: none; }
+
+.l-item-img {
+  width: 34px; height: 34px;
+  object-fit: contain; image-rendering: pixelated; flex-shrink: 0;
+}
+.l-item-img-fallback {
+  width: 34px; height: 34px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; flex-shrink: 0;
+}
+.l-item-name {
+  font-size: 9px; font-weight: 600; color: var(--text-80);
+  letter-spacing: .02em; line-height: 1.3;
+}
+.l-item-qty {
+  font-family: 'DM Mono', monospace;
+  font-size: 8px; color: var(--text-40);
+}
+
+/* check badge */
+.l-item-badge {
+  position: absolute; top: 4px; right: 4px;
+  width: 13px; height: 13px; border-radius: 3px;
+  background: var(--accent-dim); border: 1px solid var(--accent-bdr);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 7px; color: var(--accent);
+  opacity: 0; transition: opacity .12s;
+}
+.l-item-card.selected .l-item-badge { opacity: 1; }
+
+/* ── painel de grupo ── */
+#groupPanel {
+  background: var(--bg-row);
+  border: 1px solid var(--border);
+  border-radius: var(--rs);
+  overflow: hidden;
+  margin-top: 0;
+}
+.group-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--border);
+}
+.group-header-title { font-size: 11px; font-weight: 700; color: var(--text-80); }
+.group-header-badge {
+  font-family: 'DM Mono', monospace;
+  font-size: 8px; letter-spacing: .06em; text-transform: uppercase;
+  padding: 2px 7px; border-radius: 4px;
+  background: var(--gold-dim); border: 1px solid var(--gold-bdr); color: var(--gold);
+}
+.group-header-badge.member {
+  background: var(--accent-dim); border-color: var(--accent-bdr); color: var(--accent);
+}
+
+.group-member {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+}
+.group-member:last-child { border-bottom: none; }
+.group-member-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--green); flex-shrink: 0;
+}
+.group-member-dot.leader { background: var(--gold); }
+.group-member-name { font-size: 11px; font-weight: 600; color: var(--text-80); flex: 1; }
+.group-member-tag  { font-family: 'DM Mono', monospace; font-size: 8px; color: var(--text-40); letter-spacing: .06em; text-transform: uppercase; }
+
+/* linha de convite */
+.group-invite-row {
+  display: flex; gap: 6px;
+  padding: 9px 12px;
+  border-top: 1px solid var(--border);
+}
+.group-invite-input {
+  flex: 1; background: rgba(255,255,255,0.05);
+  border: 1px solid var(--border-md); border-radius: var(--rs);
+  color: var(--text); font-family: 'DM Mono', monospace; font-size: 11px;
+  padding: 6px 9px; outline: none; transition: border-color .13s;
+}
+.group-invite-input:focus { border-color: var(--accent); }
+.group-invite-input::placeholder { color: var(--text-40); }
+.group-invite-btn {
+  font-family: 'DM Sans', sans-serif; font-size: 10px; font-weight: 700;
+  padding: 6px 12px; border-radius: var(--rs);
+  background: var(--accent-dim); border: 1px solid var(--accent-bdr);
+  color: var(--text-80); cursor: pointer; transition: all .13s; white-space: nowrap;
+}
+.group-invite-btn:hover { background: rgba(91,138,245,.22); color: var(--text); }
+
+/* footer */
+.l-footer {
+  padding: 10px 14px;
+  border-top: 1px solid var(--border);
+  display: flex; align-items: center; gap: 7px;
+  flex-shrink: 0;
+}
+
+.btn-rt {
+  font-family: 'DM Sans', sans-serif; font-size: 11px; font-weight: 700;
+  padding: 8px 13px; border-radius: var(--rs);
+  cursor: pointer; transition: all .13s;
+  display: flex; align-items: center; justify-content: center; gap: 5px;
+  white-space: nowrap;
+}
+.btn-rt:active { transform: scale(.985); }
+
+.btn-cancel-rt { border: 1px solid var(--red-bdr); background: var(--red-dim); color: rgba(201,79,79,0.75); }
+.btn-cancel-rt:hover { background: rgba(201,79,79,.18); color: var(--red); border-color: rgba(201,79,79,.40); }
+
+.btn-start-rt {
+  flex: 1;
+  border: 1px solid var(--green-bdr); background: var(--green-dim); color: rgba(95,186,125,0.85);
+}
+.btn-start-rt:hover { background: rgba(95,186,125,.20); color: var(--green); border-color: rgba(95,186,125,.42); }
+.btn-start-rt:disabled { opacity: .28; cursor: not-allowed; transform: none; }
+
+.btn-group-rt { border: 1px solid var(--gold-bdr); background: var(--gold-dim); color: rgba(212,168,67,0.85); }
+.btn-group-rt:hover { background: rgba(212,168,67,.20); color: var(--gold); border-color: rgba(212,168,67,.42); }
+.btn-group-rt:disabled { opacity: .28; cursor: not-allowed; transform: none; }
+
+.btn-leave-rt { border: 1px solid var(--border-md); background: transparent; color: var(--text-40); }
+.btn-leave-rt:hover { background: rgba(255,255,255,.06); color: var(--text-60); }
+
+/* ═══════════════════════════════════════════
+   OVERLAY DE CONVITE
+═══════════════════════════════════════════ */
+#invite-overlay {
+  position: fixed; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0,0,0,0.55);
+  opacity: 0; pointer-events: none;
+  transition: opacity .18s; z-index: 30;
+}
+#invite-overlay.on { opacity: 1; pointer-events: all; }
+
+.invite-box {
+  width: 268px;
+  background: var(--bg);
+  border: 1px solid var(--border-md);
+  border-radius: var(--r);
+  overflow: hidden;
+  box-shadow: 0 16px 48px rgba(0,0,0,.72);
+  transform: scale(.94) translateY(6px);
+  transition: transform .24s cubic-bezier(.16,1,.3,1);
+}
+#invite-overlay.on .invite-box { transform: scale(1) translateY(0); }
+
+.invite-topbar {
+  height: 2px;
+  background: linear-gradient(90deg, var(--gold) 0%, rgba(212,168,67,.18) 60%, transparent 100%);
+}
+.invite-body { padding: 18px 18px 12px; text-align: center; }
+.invite-ico   { font-size: 26px; margin-bottom: 10px; }
+.invite-title { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+.invite-desc  { font-size: 10.5px; color: var(--text-60); line-height: 1.6; letter-spacing: .02em; }
+.invite-footer { display: flex; gap: 6px; padding: 10px 14px 14px; }
+
+.btn-inv-decline {
+  flex: 1; font-family: 'DM Sans', sans-serif; font-size: 11px; font-weight: 600; padding: 8px;
+  border-radius: var(--rs); border: 1px solid var(--border-md);
+  background: transparent; color: var(--text-60); cursor: pointer; transition: all .13s;
+}
+.btn-inv-decline:hover { background: rgba(255,255,255,.06); color: var(--text-80); }
+.btn-inv-accept {
+  flex: 1; font-family: 'DM Sans', sans-serif; font-size: 11px; font-weight: 700; padding: 8px;
+  border-radius: var(--rs); border: 1px solid var(--green-bdr);
+  background: var(--green-dim); color: rgba(95,186,125,0.85); cursor: pointer; transition: all .13s;
+}
+.btn-inv-accept:hover { background: rgba(95,186,125,.22); color: var(--green); }
+
+/* ═══════════════════════════════════════════
+   HUD "ROTA ATIVA" — inferior central
+═══════════════════════════════════════════ */
+#route-hud {
+  position: fixed;
+  bottom: 26px; left: 50%;
+  transform: translateX(-50%) translateY(14px);
+  pointer-events: none; opacity: 0;
+  transition: opacity .24s ease, transform .24s ease;
+  z-index: 20;
+}
+#route-hud.on { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+.hud-inner {
+  display: flex; align-items: center; gap: 12px;
+  background: rgba(6,6,8,0.94);
+  border: 1px solid var(--border-md);
+  border-top: 2px solid var(--green);
+  border-radius: var(--r);
+  padding: 10px 18px 9px;
+  box-shadow: 0 8px 32px rgba(0,0,0,.72);
+}
+.hud-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--green);
+  animation: pulse 1.8s ease-in-out infinite; flex-shrink: 0;
+}
+.hud-title { font-size: 11px; font-weight: 700; color: var(--text-80); letter-spacing: .02em; }
+.hud-sub   { font-size: 9px; color: var(--text-40); margin-top: 2px; letter-spacing: .06em; text-transform: uppercase; }
+.hud-key   { display: flex; align-items: center; gap: 5px; margin-left: 4px; }
+.hud-key-badge {
+  font-family: 'DM Mono', monospace; font-size: 9px; font-weight: 500;
+  padding: 2px 7px; border-radius: 4px;
+  background: rgba(255,255,255,0.08); border: 1px solid var(--border-md);
+  color: var(--text-60); letter-spacing: .06em;
+}
+.hud-key-label { font-size: 9px; color: var(--text-40); letter-spacing: .04em; }
+
+/* toast */
+#toast {
+  position: fixed; bottom: 80px; left: 50%;
+  transform: translateX(-50%) translateY(10px);
+  background: rgba(8,10,20,0.97);
+  border: 1px solid var(--border-md); border-left: 2px solid var(--text-40);
+  border-radius: var(--rs); padding: 9px 18px;
+  font-size: 11.5px; font-weight: 500; color: var(--text-80);
+  opacity: 0; pointer-events: none;
+  transition: opacity .20s, transform .20s; z-index: 60; white-space: nowrap;
+  box-shadow: 0 8px 28px rgba(0,0,0,.65);
+  display: flex; align-items: center; gap: 8px;
+  letter-spacing: .03em;
+}
+#toast.show    { opacity: 1; transform: translateX(-50%) translateY(0); }
+#toast.success { border-left-color: var(--green); }
+#toast.error   { border-left-color: var(--red); }
+#toast.info    { border-left-color: var(--accent); }
+#toast.warn    { border-left-color: var(--gold); }
+
+.hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════
+     PAINEL PRINCIPAL (esquerda)
+═══════════════════════════════════ -->
+<div id="left-wrapper">
+  <div id="left-panel">
+    <div class="l-topbar"></div>
+
+    <div class="l-header">
+      <div class="l-icon">🗺️</div>
+      <div>
+        <div class="l-title">Rotas de Coleta</div>
+        <div class="l-sub" id="lSub">selecione até 5 itens</div>
+      </div>
+      <button class="l-close" id="lClose">✕</button>
+    </div>
+
+    <div class="l-counter">
+      <span class="l-counter-label">Itens selecionados</span>
+      <span class="l-counter-val" id="lCounter">0 / 5</span>
+    </div>
+
+    <!-- banner rota ativa -->
+    <div class="l-active-banner hidden" id="lActiveBanner">
+      <div class="l-active-dot"></div>
+      <div>
+        <div class="l-active-text">Rota em andamento</div>
+        <div class="l-active-sub">cancele para escolher novos itens</div>
+      </div>
+    </div>
+
+    <div class="l-body">
+
+      <!-- grid de itens -->
+      <div class="l-section-label" id="lItemsLabel">Itens disponíveis</div>
+      <div class="l-item-grid" id="lItemGrid"></div>
+
+      <!-- seção grupo -->
+      <div id="groupSection" class="hidden">
+        <div class="l-section-label">Grupo</div>
+        <div id="groupPanel">
+          <div class="group-header">
+            <span class="group-header-title" id="groupTitle">Seu Grupo</span>
+            <span class="group-header-badge" id="groupBadge">LÍDER</span>
+          </div>
+          <div id="groupMemberList"></div>
+          <div class="group-invite-row" id="groupInviteRow">
+            <input class="group-invite-input" id="groupInviteInput" type="number" placeholder="Passaporte do jogador..." />
+            <button class="group-invite-btn" id="groupInviteBtn">+ Convidar</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="l-footer">
+      <button class="btn-rt btn-cancel-rt hidden" id="btnCancelRoute">✕ Cancelar</button>
+      <button class="btn-rt btn-leave-rt hidden"  id="btnLeaveGroup">← Sair</button>
+      <button class="btn-rt btn-group-rt hidden"  id="btnCreateGroup" disabled>👥 Criar Grupo</button>
+      <button class="btn-rt btn-start-rt"          id="btnStartRoute"  disabled>▶ Iniciar Solo</button>
+      <button class="btn-rt btn-start-rt hidden"   id="btnStartGroup"  disabled>▶ Iniciar Grupo</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════
+     OVERLAY DE CONVITE
+═══════════════════════════════════ -->
+<div id="invite-overlay">
+  <div class="invite-box">
+    <div class="invite-topbar"></div>
+    <div class="invite-body">
+      <div class="invite-ico">👥</div>
+      <div class="invite-title" id="inviteTitle">Convite de Rota</div>
+      <div class="invite-desc"  id="inviteDesc">Você recebeu um convite para uma rota conjunta.</div>
+    </div>
+    <div class="invite-footer">
+      <button class="btn-inv-decline" id="btnDecline">Recusar</button>
+      <button class="btn-inv-accept"  id="btnAccept">Aceitar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════
+     HUD ROTA ATIVA
+═══════════════════════════════════ -->
+<div id="route-hud">
+  <div class="hud-inner">
+    <div class="hud-dot"></div>
+    <div>
+      <div class="hud-title">Sua rota está ativa</div>
+      <div class="hud-sub" id="hudSub">vá até o blip no mapa</div>
+    </div>
+    <div class="hud-key">
+      <span class="hud-key-badge">F7</span>
+      <span class="hud-key-label" id="hudKeyLabel">cancelar</span>
+    </div>
+  </div>
+</div>
+
+<div id="toast"><span id="toastMsg"></span></div>
+
+<script>
+// ════════════════════════════════════════
+//  STATE
+// ════════════════════════════════════════
+let allItems    = [];
+let maxSelect   = 5;
+let selected    = new Set();
+let routeActive = false;
+let inGroup     = false;
+let isLeader    = false;
+let myName      = '';
+let groupMembers= [];
+let invLeaderName = '';
+
+// ════════════════════════════════════════
+//  HELPERS
+// ════════════════════════════════════════
+function rname(){
+  return (window.GetParentResourceName && window.GetParentResourceName()) || 'routes_v2';
+}
+function post(cb, data){
+  fetch('https://' + rname() + '/' + cb, {
+    method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data||{})
+  }).catch(()=>{});
+}
+
+let _toastTimer;
+function toast(msg, type='info'){
+  const el = document.getElementById('toast');
+  document.getElementById('toastMsg').textContent = msg;
+  el.className = 'show ' + type;
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => el.classList.remove('show'), 3400);
+}
+
+function itemIconUrl(itemName){
+  return 'nui://vrp/config/inventory/' + itemName + '.png';
+}
+
+// ════════════════════════════════════════
+//  RENDER GRID DE ITENS
+// ════════════════════════════════════════
+function renderGrid(){
+  const grid = document.getElementById('lItemGrid');
+  grid.innerHTML = '';
+
+  allItems.forEach((item, i) => {
+    const idx    = i + 1;
+    const isSel  = selected.has(idx);
+    const isFull = selected.size >= maxSelect && !isSel;
+    const isLock = routeActive;
+
+    const cell = document.createElement('div');
+    cell.className = 'l-item-card'
+      + (isSel ? ' selected' : '')
+      + ((isFull || isLock) ? ' disabled' : '');
+
+    const qtyLabel = item.Min === item.Max
+      ? item.Min + 'x / coleta'
+      : item.Min + '–' + item.Max + 'x';
+
+    cell.innerHTML = `
+      <img class="l-item-img"
+           src="${itemIconUrl(item.Icon)}"
+           onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"
+           alt="${item.Label}">
+      <div class="l-item-img-fallback" style="display:none">📦</div>
+      <div class="l-item-name">${item.Label}</div>
+      <div class="l-item-qty">${qtyLabel}</div>
+      <div class="l-item-badge">✓</div>`;
+
+    if(!isFull && !isLock){
+      cell.addEventListener('click', () => {
+        if(selected.has(idx)) selected.delete(idx);
+        else if(selected.size < maxSelect) selected.add(idx);
+        renderGrid();
+        updateCounter();
+        updateFooter();
+      });
+    }
+
+    grid.appendChild(cell);
+  });
+}
+
+function updateCounter(){
+  const el   = document.getElementById('lCounter');
+  const full = selected.size >= maxSelect;
+  el.textContent = selected.size + ' / ' + maxSelect;
+  el.className   = 'l-counter-val' + (full ? ' full' : '');
+}
+
+// ════════════════════════════════════════
+//  RENDER GRUPO
+// ════════════════════════════════════════
+function renderGroup(){
+  const section = document.getElementById('groupSection');
+  if(!inGroup){ section.classList.add('hidden'); return; }
+  section.classList.remove('hidden');
+
+  const badge = document.getElementById('groupBadge');
+  badge.textContent = isLeader ? 'LÍDER' : 'MEMBRO';
+  badge.className   = 'group-header-badge' + (isLeader ? '' : ' member');
+  document.getElementById('groupTitle').textContent = isLeader ? 'Seu Grupo' : 'Grupo';
+  document.getElementById('groupInviteRow').classList.toggle('hidden', !isLeader);
+
+  const list = document.getElementById('groupMemberList');
+  list.innerHTML = '';
+  groupMembers.forEach(m => {
+    const row = document.createElement('div');
+    row.className = 'group-member';
+    row.innerHTML = `
+      <span class="group-member-dot ${m.isLeader ? 'leader' : ''}"></span>
+      <span class="group-member-name">${m.name}</span>
+      <span class="group-member-tag">${m.isLeader ? 'líder' : 'membro'}</span>`;
+    list.appendChild(row);
+  });
+}
+
+// ════════════════════════════════════════
+//  FOOTER
+// ════════════════════════════════════════
+function updateFooter(){
+  const canStart = selected.size > 0;
+  ['btnCancelRoute','btnLeaveGroup','btnCreateGroup','btnStartRoute','btnStartGroup'].forEach(id => {
+    document.getElementById(id).classList.add('hidden');
+  });
+  document.getElementById('btnStartRoute').disabled  = true;
+  document.getElementById('btnStartGroup').disabled  = true;
+  document.getElementById('btnCreateGroup').disabled = true;
+
+  if(routeActive){
+    document.getElementById('btnCancelRoute').classList.remove('hidden');
+    return;
+  }
+  if(inGroup && isLeader){
+    document.getElementById('btnStartGroup').classList.remove('hidden');
+    document.getElementById('btnStartGroup').disabled = !canStart;
+    return;
+  }
+  if(inGroup && !isLeader){
+    document.getElementById('btnLeaveGroup').classList.remove('hidden');
+    return;
+  }
+
+  document.getElementById('btnCreateGroup').classList.remove('hidden');
+  document.getElementById('btnCreateGroup').disabled = !canStart;
+  document.getElementById('btnStartRoute').classList.remove('hidden');
+  document.getElementById('btnStartRoute').disabled  = !canStart;
+}
+
+// ════════════════════════════════════════
+//  ABRIR / FECHAR
+// ════════════════════════════════════════
+function openPanel(items, max, active, group, leader, name){
+  allItems    = items || [];
+  maxSelect   = max   || 5;
+  routeActive = !!active;
+  inGroup     = !!group;
+  isLeader    = !!leader;
+  myName      = name || 'Você';
+  selected    = new Set();
+
+  if(inGroup && isLeader)       groupMembers = [{ name: myName, isLeader: true }];
+  else if(inGroup && !isLeader) groupMembers = [{ name: myName, isLeader: false }];
+  else                          groupMembers = [];
+
+  document.getElementById('lSub').textContent =
+    routeActive          ? 'rota em andamento'
+    : inGroup && isLeader  ? 'grupo criado — convide jogadores'
+    : inGroup              ? 'aguardando o líder iniciar'
+    : 'selecione até ' + maxSelect + ' itens';
+
+  document.getElementById('lActiveBanner').classList.toggle('hidden', !routeActive);
+  document.getElementById('lItemsLabel').classList.toggle('hidden', routeActive);
+
+  renderGrid();
+  updateCounter();
+  renderGroup();
+  updateFooter();
+
+  document.getElementById('left-wrapper').classList.add('on');
+}
+
+function closePanel(skipPost){
+  document.getElementById('left-wrapper').classList.remove('on');
+  if(!skipPost) post('routes:Close');
+}
+
+// ════════════════════════════════════════
+//  HUD
+// ════════════════════════════════════════
+function showHud(leader){
+  document.getElementById('hudSub').textContent      = leader ? 'F7 cancela para todos no grupo' : 'F7 sai da rota (grupo continua)';
+  document.getElementById('hudKeyLabel').textContent = leader ? 'cancelar grupo' : 'sair';
+  document.getElementById('route-hud').classList.add('on');
+}
+function hideHud(){
+  document.getElementById('route-hud').classList.remove('on');
+}
+
+// ════════════════════════════════════════
+//  BOTÕES
+// ════════════════════════════════════════
+document.getElementById('lClose').addEventListener('click', () => closePanel());
+
+document.getElementById('btnStartRoute').addEventListener('click', () => {
+  if(selected.size === 0) return;
+  post('routes:Start', { selected: Array.from(selected) });
+  routeActive = true;
+  closePanel(true);
+  showHud(false);
+  toast('Rota iniciada! Siga o blip no mapa.', 'success');
+});
+
+document.getElementById('btnCreateGroup').addEventListener('click', () => {
+  if(selected.size === 0){ toast('Selecione ao menos 1 item.', 'warn'); return; }
+  post('routes:CreateGroup', { selected: Array.from(selected) });
+  inGroup  = true;
+  isLeader = true;
+  groupMembers = [{ name: myName, isLeader: true }];
+  document.getElementById('lSub').textContent = 'grupo criado — convide jogadores';
+  renderGroup();
+  updateFooter();
+  toast('Grupo criado! Convide jogadores pelo ID (F1).', 'info');
+});
+
+document.getElementById('groupInviteBtn').addEventListener('click', () => {
+  const input          = document.getElementById('groupInviteInput');
+  const targetPassport = parseInt(input.value);
+  if(!targetPassport || isNaN(targetPassport) || targetPassport <= 0){ input.focus(); return; }
+  post('routes:Invite', { targetPassport });
+  input.value = '';
+  toast('Convite enviado!', 'info');
+});
+
+document.getElementById('btnStartGroup').addEventListener('click', () => {
+  post('routes:StartGroup', {});
+  routeActive = true;
+  closePanel(true);
+  showHud(true);
+  toast('Rota de grupo iniciada!', 'success');
+});
+
+document.getElementById('btnCancelRoute').addEventListener('click', () => {
+  post('routes:Cancel', {});
+  routeActive = false; inGroup = false; isLeader = false;
+  closePanel(true);
+  hideHud();
+  toast('Rota cancelada.', 'warn');
+});
+
+document.getElementById('btnLeaveGroup').addEventListener('click', () => {
+  post('routes:LeaveGroup', {});
+  inGroup = false; isLeader = false; groupMembers = [];
+  closePanel(true);
+  toast('Você saiu do grupo.', 'warn');
+});
+
+document.addEventListener('keydown', e => {
+  if(e.key === 'Escape'){
+    if(document.getElementById('invite-overlay').classList.contains('on')){ declineInvite(); return; }
+    closePanel();
+  }
+});
+
+// ════════════════════════════════════════
+//  OVERLAY CONVITE
+// ════════════════════════════════════════
+function showInvite(leaderName){
+  invLeaderName = leaderName;
+  document.getElementById('inviteTitle').textContent = 'Convite de ' + leaderName;
+  document.getElementById('inviteDesc').textContent  = leaderName + ' te convidou para uma rota conjunta. Deseja participar?';
+  document.getElementById('invite-overlay').classList.add('on');
+}
+
+function declineInvite(){
+  document.getElementById('invite-overlay').classList.remove('on');
+  post('routes:DeclineInvite', {});
+}
+
+document.getElementById('btnDecline').addEventListener('click', declineInvite);
+document.getElementById('btnAccept').addEventListener('click', () => {
+  document.getElementById('invite-overlay').classList.remove('on');
+  post('routes:AcceptInvite', {});
+  inGroup  = true;
+  isLeader = false;
+  toast('Você entrou no grupo de ' + invLeaderName + '!', 'success');
+});
+
+// ════════════════════════════════════════
+//  NUI MESSAGES
+// ════════════════════════════════════════
+window.addEventListener('message', e => {
+  const d = e.data;
+  if(!d || !d.type) return;
+
+  switch(d.type){
+    case 'routes:Open':
+      openPanel(d.items, d.max, d.active, d.inGroup, d.isLeader, d.myName);
+      break;
+    case 'routes:Close':
+      closePanel(true);
+      break;
+    case 'routes:HudShow':
+      showHud(d.isLeader);
+      break;
+    case 'routes:HudHide':
+      hideHud();
+      break;
+    case 'routes:RouteEnded':
+      routeActive = false;
+      hideHud();
+      break;
+    case 'routes:InviteReceived':
+      showInvite(d.leaderName);
+      break;
+    case 'routes:MemberJoined':
+      groupMembers.push({ name: d.name, isLeader: false });
+      renderGroup();
+      toast(d.name + ' entrou no grupo!', 'success');
+      break;
+    case 'routes:MemberLeft':
+      groupMembers = groupMembers.filter(m => m.name !== d.name);
+      renderGroup();
+      toast(d.name + ' saiu do grupo.', 'warn');
+      break;
+  }
+});
+</script>
+</body>
+</html>
